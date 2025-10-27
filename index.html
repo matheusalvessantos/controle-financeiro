@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle Financeiro Profissional</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .sidebar-button.active {
+            background-color: #4f46e5; /* indigo-600 */
+            color: white;
+        }
+        #add-modal, #loading-overlay {
+            display: none;
+        }
+        /* Estilo para a tabela com rolagem */
+        .table-wrapper {
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body class="bg-slate-100">
+
+    <!-- Overlay de Carregamento -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style="display: flex;">
+        <div class="text-white text-lg font-medium">Carregando dados...</div>
+    </div>
+
+    <div class="flex flex-col md:flex-row h-screen">
+        
+        <!-- Sidebar (Navegação Principal) -->
+        <nav class="bg-slate-900 text-slate-300 w-full md:w-64 p-4 space-y-2 flex-shrink-0 flex flex-col">
+            <div>
+                <h1 class="text-2xl font-bold text-white mb-6 px-2">FinTrack</h1>
+                
+                <button onclick="showPage('page-dashboard')" class="sidebar-button active w-full flex items-center space-x-3 px-3 py-2 rounded-md font-medium text-sm hover:bg-slate-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                    <span>Dashboard</span>
+                </button>
+
+                <button onclick="showPage('page-lancamentos')" class="sidebar-button w-full flex items-center space-x-3 px-3 py-2 rounded-md font-medium text-sm hover:bg-slate-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                    <span>Lançamentos</span>
+                </button>
+
+                <button onclick="showPage('page-config')" class="sidebar-button w-full flex items-center space-x-3 px-3 py-2 rounded-md font-medium text-sm hover:bg-slate-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2l-.15.1a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1 0-2l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    <span>Configurações</span>
+                </button>
+            </div>
+            
+            <!-- User ID Display -->
+            <div class="mt-auto pt-4 border-t border-slate-700">
+                 <span class="text-xs text-slate-500 px-2">ID de Usuário:</span>
+                 <span id="userIdDisplay" class="text-xs text-slate-400 px-2 break-all">Carregando...</span>
+            </div>
+        </nav>
+
+        <!-- Conteúdo Principal -->
+        <main class="flex-1 overflow-y-auto p-6 md:p-10">
+
+            <!-- Página 1: Dashboard -->
+            <div id="page-dashboard" class="page-content space-y-8">
+                <header class="flex flex-col md:flex-row md:items-center md:justify-between">
+                    <div>
+                        <h2 class="text-3xl font-bold text-slate-800">Dashboard</h2>
+                        <p class="text-slate-600">Seu resumo financeiro.</p>
+                    </div>
+                     <!-- Filtros de Mês/Ano -->
+                    <div class="flex gap-4 mt-4 md:mt-0">
+                        <div>
+                            <label for="filter-month" class="block text-sm font-medium text-slate-700">Mês</label>
+                            <select id="filter-month" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
+                                <!-- Preenchido por JS -->
+                            </select>
+                        </div>
+                        <div>
+                            <label for="filter-year" class="block text-sm font-medium text-slate-700">Ano</label>
+                            <select id="filter-year" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
+                                <!-- Preenchido por JS -->
+                            </select>
+                        </div>
+                    </div>
+                </header>
+
+                <!-- Cards de Resumo -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="bg-white p-6 rounded-lg shadow-md border border-slate-200">
+                        <h3 class="text-sm font-medium text-slate-500">Receitas</h3>
+                        <p id="dash-receitas" class="mt-2 text-3xl font-semibold text-green-600">R$ 0,00</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md border border-slate-200">
+                        <h3 class="text-sm font-medium text-slate-500">Despesas Pagas</h3>
+                        <p id="dash-despesas" class="mt-2 text-3xl font-semibold text-red-600">R$ 0,00</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md border border-slate-200">
+                        <h3 class="text-sm font-medium text-slate-500">Saldo do Mês</h3>
+                        <p id="dash-saldo" class="mt-2 text-3xl font-semibold text-indigo-600">R$ 0,00</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md border border-orange-300">
+                        <h3 class="text-sm font-medium text-slate-500">Pendentes</h3>
+                        <p id="dash-pendentes" class="mt-2 text-3xl font-semibold text-orange-500">R$ 0,00</p>
+                    </div>
+                </div>
+
+                <!-- Gráficos e Tabelas -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Gastos por Categoria -->
+                    <div class="bg-white p-6 rounded-lg shadow-md border border-slate-200">
+                        <h3 class="text-lg font-semibold text-slate-800 mb-4">Gastos por Categoria (Pagos)</h3>
+                        <div id="dash-categorias" class="space-y-4">
+                            <p class="text-slate-500">Nenhuma despesa paga este mês.</p>
+                        </div>
+                    </div>
+                    <!-- Faturas de Cartão -->
+                    <div class="bg-white p-6 rounded-lg shadow-md border border-slate-200">
+                        <h3 class="text-lg font-semibold text-slate-800 mb-4">Contas a Pagar (Pendentes)</h3>
+                        <div class="flow-root">
+                            <ul id="dash-faturas" role="list" class="divide-y divide-slate-200">
+                                <li class="py-3 text-slate-500">Nenhuma conta pendente este mês.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Página 2: Lançamentos -->
+            <div id="page-lancamentos" class="page-content hidden space-y-6">
+                <header class="flex flex-col md:flex-row md:items-center md:justify-between">
+                    <div>
+                        <h2 class="text-3xl font-bold text-slate-800">Meus Lançamentos</h2>
+                        <p class="text-slate-600">O banco de dados central de todas as suas movimentações.</p>
+                    </div>
+                    <button onclick="openModal('add-modal')" class="mt-4 md:mt-0 bg-indigo-600 text-white font-medium px-4 py-2 rounded-lg shadow-md hover:bg-indigo-700 flex items-center space-x-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        <span>Adicionar Lançamento</span>
+                    </button>
+                </header>
+
+                <!-- Tabela de Lançamentos -->
+                <div class="bg-white rounded-lg shadow-md border border-slate-200 overflow-hidden">
+                    <div class="table-wrapper overflow-x-auto">
+                        <table class="min-w-full divide-y divide-slate-200">
+                            <thead class="bg-slate-50 sticky top-0">
+                                <tr>
+                                    <th class="p-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Descrição</th>
+                                    <th class="p-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Data Venc.</th>
+                                    <th class="p-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Data Pagto.</th>
+                                    <th class="p-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Categoria</th>
+                                    <th class="p-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Conta</th>
+                                    <th class="p-4 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
+                                    <th class="p-4 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Valor</th>
+                                    <th class="p-4 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactions-table-body" class="bg-white divide-y divide-slate-200">
+                                <!-- Linhas preenchidas por JS -->
+                                <tr><td colspan="8" class="p-4 text-center text-slate-500">Nenhum lançamento encontrado.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Página 3: Configurações -->
+            <div id="page-config" class="page-content hidden space-y-6">
+                <header>
+                    <h2 class="text-3xl font-bold text-slate-800">Configurações</h2>
+                    <p class="text-slate-600">Listas mestras para organizar seus lançamentos.</p>
+                </header>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Lista de Contas -->
+                    <div class="bg-white p-6 rounded-lg shadow-md border border-slate-200">
+                        <h3 class="text-lg font-semibold text-slate-800 mb-4">Minhas Contas e Cartões</h3>
+                        <p class="text-sm text-slate-500 mb-4">Adicione aqui todas as contas correntes, cartões de crédito e carteiras.</p>
+                        <form id="form-add-account" class="flex gap-2 mb-4">
+                            <input type="text" id="input-account-name" placeholder="Nome da nova conta" class="flex-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" required>
+                            <button type="submit" class="bg-indigo-600 text-white px-3 py-2 rounded-lg shadow-md hover:bg-indigo-700 text-sm font-medium">Adicionar</button>
+                        </form>
+                        <ul id="accounts-list" class="divide-y divide-slate-200">
+                           <!-- Preenchido por JS -->
+                           <li class="py-2 text-slate-500">Nenhuma conta cadastrada.</li>
+                        </ul>
+                    </div>
+
+                    <!-- Lista de Categorias -->
+                    <div class="bg-white p-6 rounded-lg shadow-md border-slate-200">
+                        <h3 class="text-lg font-semibold text-slate-800 mb-4">Minhas Categorias</h3>
+                        <p class="text-sm text-slate-500 mb-4">Crie categorias para agrupar seus gastos (ex: Moradia, Alimentação).</p>
+                         <form id="form-add-category" class="flex gap-2 mb-4">
+                            <input type="text" id="input-category-name" placeholder="Nome da nova categoria" class="flex-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" required>
+                            <button type="submit" class="bg-indigo-600 text-white px-3 py-2 rounded-lg shadow-md hover:bg-indigo-700 text-sm font-medium">Adicionar</button>
+                        </form>
+                        <ul id="categories-list" class="divide-y divide-slate-200">
+                           <!-- Preenchido por JS -->
+                           <li class="py-2 text-slate-500">Nenhuma categoria cadastrada.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Modal para Adicionar Lançamento -->
+    <div id="add-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-40">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-lg">
+            <form id="form-add-transaction">
+                <!-- Modal Header -->
+                <div class="flex justify-between items-center p-5 border-b border-slate-200">
+                    <h3 class="text-xl font-semibold text-slate-800">Novo Lançamento</h3>
+                    <button type="button" onclick="closeModal('add-modal')" class="text-slate-400 hover:text-slate-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                </div>
+                <!-- Modal Body -->
+                <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+                    <div>
+                        <label for="desc" class="block text-sm font-medium text-slate-700">Descrição</label>
+                        <input type="text" id="desc" class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="Ex: Supermercado do mês" required>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="tipo" class="block text-sm font-medium text-slate-700">Tipo</label>
+                            <select id="tipo" class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" required>
+                                <option value="despesa">Despesa</option>
+                                <option value="receita">Receita</option>
+                            </select>
+                        </div>
+                         <div>
+                            <label for="valor" class="block text-sm font-medium text-slate-700">Valor</label>
+                            <input type="number" id="valor" step="0.01" class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="0,00" required>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="venc" class="block text-sm font-medium text-slate-700">Data Vencimento</label>
+                            <input type="date" id="venc" class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" required>
+                        </div>
+                        <div>
+                            <label for="pagto" class="block text-sm font-medium text-slate-700">Data Pagamento (se houver)</label>
+                            <input type="date" id="pagto" class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="categoria" class="block text-sm font-medium text-slate-700">Categoria</label>
+                            <select id="categoria" class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" required>
+                                <!-- Preenchido por JS -->
+                            </select>
+                        </div>
+                        <div>
+                            <label for="conta" class="block text-sm font-medium text-slate-700">Conta/Cartão</label>
+                            <select id="conta" class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" required>
+                                 <!-- Preenchido por JS -->
+                            </select>
+                        </div>
+                    </div>
+
+                     <div>
+                        <label for="parcelas" class="block text-sm font-medium text-slate-700">Nº de Parcelas (ex: 1, 6, 12)</label>
+                        <input type="number" id="parcelas" class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" value="1" min="1" placeholder="1 (se for à vista)" required>
+                    </div>
+                </div>
+                <!-- Modal Footer -->
+                <div class="flex justify-end items-center p-5 bg-slate-50 border-t border-slate-200 rounded-b-lg">
+                    <button type="button" onclick="closeModal('add-modal')" class="text-sm font-medium text-slate-600 px-4 py-2 rounded-lg hover:bg-slate-200">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="ml-3 text-sm font-medium text-white bg-indigo-600 px-4 py-2 rounded-lg shadow-md hover:bg-indigo-700">
+                        Salvar Lançamento
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Módulos Firebase -->
+    <script type="module">
+        // Importações do Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { 
+            getAuth, 
+            signInAnonymously, 
+            signInWithCustomToken, 
+            onAuthStateChanged 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            doc, 
+            addDoc, 
+            deleteDoc, 
+            collection, 
+            onSnapshot,
+            setLogLevel
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- VARIÁVEIS GLOBAIS ---
+        let db, auth, currentUserId;
+        let allTransactions = []; // Cache local de todas as transações
+        let allCategories = [];
+        let allAccounts = [];
+
+        // Caminhos das coleções (compartilhados publicamente no app)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const transactionsCollectionPath = `/artifacts/${appId}/public/data/transactions`;
+        const accountsCollectionPath = `/artifacts/${appId}/public/data/accounts`;
+        const categoriesCollectionPath = `/artifacts/${appId}/public/data/categories`;
+
+        // Elementos da UI
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const userIdDisplay = document.getElementById('userIdDisplay');
+        
+        const filterMonth = document.getElementById('filter-month');
+        const filterYear = document.getElementById('filter-year');
+        
+        const transactionsTableBody = document.getElementById('transactions-table-body');
+        const accountsList = document.getElementById('accounts-list');
+        const categoriesList = document.getElementById('categories-list');
+        
+        const modalForm = document.getElementById('form-add-transaction');
+        const formAddAccount = document.getElementById('form-add-account');
+        const formAddCategory = document.getElementById('form-add-category');
+        
+        const selectCategoria = document.getElementById('categoria');
+        const selectConta = document.getElementById('conta');
+
+        // --- INICIALIZAÇÃO ---
+
+        function initFirebase() {
+            try {
+                // Configuração do Firebase (fornecida pelo ambiente)
+                const firebaseConfigStr = typeof __firebase_config !== 'undefined' ? __firebase_config : '{}';
+                const firebaseConfig = JSON.parse(firebaseConfigStr);
+
+                if (!firebaseConfig.apiKey) {
+                    console.error("Configuração do Firebase não encontrada!");
+                    loadingOverlay.innerText = "Erro: Configuração do Firebase não encontrada.";
+                    return;
+                }
+
+                // Inicializar Firebase
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                setLogLevel('debug'); // Habilita logs do Firestore no console
+
+                // Lidar com autenticação
+                handleAuthentication();
+
+            } catch (error) {
+                console.error("Erro ao inicializar Firebase:", error);
+                loadingOverlay.innerText = "Erro ao carregar a aplicação.";
+            }
+        }
+        
+        async function handleAuthentication() {
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    console.log("Usuário autenticado:", user.uid);
+                    currentUserId = user.uid;
+                    userIdDisplay.textContent = currentUserId; // Mostra o ID na tela
+                    
+                    // Usuário está logado, carregar todos os dados
+                    await loadInitialData();
+                    loadingOverlay.style.display = 'none';
+
+                } else {
+                    // Usuário não está logado, tentar login
+                    console.log("Nenhum usuário logado, tentando autenticação...");
+                    try {
+                        // Tenta usar o token inicial fornecido pelo ambiente
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                        } else {
+                            // Fallback para login anônimo
+                            await signInAnonymously(auth);
+                        }
+                        // O onAuthStateChanged será disparado novamente após o login
+                    } catch (error) {
+                        console.error("Erro ao autenticar:", error);
+                        loadingOverlay.innerText = "Erro ao autenticar.";
+                    }
+                }
+            });
+        }
+        
+        async function loadInitialData() {
+            // Preencher filtros de data
+            setupDateFilters();
+
+            // Carregar dados e configurar listeners em tempo real
+            loadCategories();
+            loadAccounts();
+            loadTransactions(); // Esta função também chamará updateDashboard
+
+            // Configurar listeners de UI
+            setupUIListeners();
+        }
+        
+        function setupDateFilters() {
+            const months = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+            const currentMonth = new Date().getMonth();
+            const currentYear = new Date().getFullYear();
+
+            filterMonth.innerHTML = '';
+            months.forEach((month, index) => {
+                const option = new Option(month, index); // Valor é 0-11
+                option.selected = (index === currentMonth);
+                filterMonth.add(option);
+            });
+
+            filterYear.innerHTML = '';
+            for (let i = currentYear - 3; i <= currentYear + 3; i++) {
+                const option = new Option(i, i);
+                option.selected = (i === currentYear);
+                filterYear.add(option);
+            }
+            
+            filterMonth.addEventListener('change', () => updateDashboard(allTransactions));
+            filterYear.addEventListener('change', () => updateDashboard(allTransactions));
+        }
+        
+        function setupUIListeners() {
+            modalForm.addEventListener('submit', handleAddTransaction);
+            formAddAccount.addEventListener('submit', handleAddConfig);
+            formAddCategory.addEventListener('submit', handleAddConfig);
+        }
+
+        // --- CARREGAMENTO DE DADOS (FIRESTORE ONMOMENT) ---
+
+        function loadCategories() {
+            const categoriesCollection = collection(db, categoriesCollectionPath);
+            onSnapshot(categoriesCollection, (snapshot) => {
+                allCategories = [];
+                categoriesList.innerHTML = '';
+                selectCategoria.innerHTML = '';
+                
+                if (snapshot.empty) {
+                    categoriesList.innerHTML = '<li class="py-2 text-slate-500">Nenhuma categoria cadastrada.</li>';
+                    return;
+                }
+
+                snapshot.docs.forEach(doc => {
+                    const category = { id: doc.id, ...doc.data() };
+                    allCategories.push(category);
+                    
+                    // Renderizar na lista de Config
+                    const li = document.createElement('li');
+                    li.className = "py-2 flex justify-between items-center";
+                    li.innerHTML = `
+                        <span class="text-slate-700">${category.name}</span>
+                        <button data-id="${category.id}" data-type="category" class="delete-config-btn text-red-500 hover:text-red-700 text-sm font-medium">Excluir</button>
+                    `;
+                    categoriesList.appendChild(li);
+                    
+                    // Adicionar ao select do Modal
+                    selectCategoria.add(new Option(category.name, category.name));
+                });
+                
+                // Adicionar listeners aos botões de excluir
+                document.querySelectorAll('.delete-config-btn[data-type="category"]').forEach(btn => {
+                   btn.addEventListener('click', () => handleDeleteConfig(btn.dataset.id, categoriesCollectionPath));
+                });
+            });
+        }
+
+        function loadAccounts() {
+            const accountsCollection = collection(db, accountsCollectionPath);
+            onSnapshot(accountsCollection, (snapshot) => {
+                allAccounts = [];
+                accountsList.innerHTML = '';
+                selectConta.innerHTML = '';
+
+                if (snapshot.empty) {
+                    accountsList.innerHTML = '<li class="py-2 text-slate-500">Nenhuma conta cadastrada.</li>';
+                    return;
+                }
+
+                snapshot.docs.forEach(doc => {
+                    const account = { id: doc.id, ...doc.data() };
+                    allAccounts.push(account);
+                    
+                    // Renderizar na lista de Config
+                    const li = document.createElement('li');
+                    li.className = "py-2 flex justify-between items-center";
+                    li.innerHTML = `
+                        <span class="text-slate-700">${account.name}</span>
+                        <button data-id="${account.id}" data-type="account" class="delete-config-btn text-red-500 hover:text-red-700 text-sm font-medium">Excluir</button>
+                    `;
+                    accountsList.appendChild(li);
+                    
+                    // Adicionar ao select do Modal
+                    selectConta.add(new Option(account.name, account.name));
+                });
+                
+                // Adicionar listeners aos botões de excluir
+                document.querySelectorAll('.delete-config-btn[data-type="account"]').forEach(btn => {
+                   btn.addEventListener('click', () => handleDeleteConfig(btn.dataset.id, accountsCollectionPath));
+                });
+            });
+        }
+
+        function loadTransactions() {
+            const transCollection = collection(db, transactionsCollectionPath);
+            // NOTA: Para um app real, seria preciso paginar ou filtrar por data no 'query'.
+            // Para este cenário de casal, carregar tudo é aceitável.
+            onSnapshot(transCollection, (snapshot) => {
+                allTransactions = [];
+                transactionsTableBody.innerHTML = '';
+
+                if (snapshot.empty) {
+                    transactionsTableBody.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-slate-500">Nenhum lançamento encontrado.</td></tr>';
+                }
+
+                snapshot.docs.forEach(doc => {
+                    const tx = { id: doc.id, ...doc.data() };
+                    allTransactions.push(tx);
+                    
+                    const tr = renderTransactionRow(tx);
+                    transactionsTableBody.appendChild(tr);
+                });
+                
+                // Adicionar listeners aos botões de excluir
+                document.querySelectorAll('.delete-tx-btn').forEach(btn => {
+                   btn.addEventListener('click', () => handleDeleteTransaction(btn.dataset.id));
+                });
+
+                // Atualizar o dashboard com os novos dados
+                updateDashboard(allTransactions);
+            });
+        }
+
+        // --- RENDERIZAÇÃO E LÓGICA DE UI ---
+
+        function renderTransactionRow(tx) {
+            const tr = document.createElement('tr');
+            tr.className = tx.tipo === 'receita' ? 'bg-green-50' : 'bg-white';
+            
+            const isPendente = !tx.dataPagamento;
+            const statusClass = isPendente ? 'bg-orange-100 text-orange-800' : 'bg-green-100 text-green-800';
+            const statusText = isPendente ? 'Pendente' : 'Pago';
+            
+            const valorClass = tx.tipo === 'receita' ? 'text-green-600' : 'text-red-600';
+            const valor = (tx.tipo === 'receita' ? 1 : -1) * tx.valor;
+            
+            // Formatar datas (DD/MM/YYYY)
+            const dataVenc = new Date(tx.dataVencimento + 'T00:00:00-03:00').toLocaleDateString('pt-BR');
+            const dataPagto = tx.dataPagamento ? new Date(tx.dataPagamento + 'T00:00:00-03:00').toLocaleDateString('pt-BR') : '---';
+
+            tr.innerHTML = `
+                <td class="p-4 whitespace-nowrap text-sm font-medium text-slate-900">${tx.descricao} ${tx.parcela || ''}</td>
+                <td class="p-4 whitespace-nowrap text-sm text-slate-500">${dataVenc}</td>
+                <td class="p-4 whitespace-nowrap text-sm text-slate-500">${dataPagto}</td>
+                <td class="p-4 whitespace-nowrap text-sm text-slate-500">${tx.categoria}</td>
+                <td class="p-4 whitespace-nowrap text-sm text-slate-500">${tx.conta}</td>
+                <td class="p-4 whitespace-nowrap text-sm text-center">
+                    <span class="px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">${statusText}</span>
+                </td>
+                <td class="p-4 whitespace-nowrap text-sm text-right font-medium ${valorClass}">${formatCurrency(valor)}</td>
+                <td class="p-4 whitespace-nowrap text-sm text-center">
+                    <button data-id="${tx.id}" class="delete-tx-btn text-red-500 hover:text-red-700 text-sm font-medium">Excluir</button>
+                    <!-- Funcionalidade de Edição pode ser adicionada aqui -->
+                </td>
+            `;
+            return tr;
+        }
+
+        function updateDashboard(transactions) {
+            const selectedMonth = parseInt(filterMonth.value); // 0-11
+            const selectedYear = parseInt(filterYear.value);
+
+            // 1. Filtrar transações pelo mês e ano selecionados
+            const filteredTransactions = transactions.filter(tx => {
+                const txDate = new Date(tx.dataVencimento + 'T00:00:00-03:00'); // Usar data de vencimento para o dashboard
+                return txDate.getMonth() === selectedMonth && txDate.getFullYear() === selectedYear;
+            });
+
+            let totalReceitas = 0;
+            let totalDespesasPagas = 0;
+            let totalPendentes = 0;
+            const gastosPorCategoria = {};
+            const contasPendentes = [];
+
+            filteredTransactions.forEach(tx => {
+                const isPendente = !tx.dataPagamento;
+
+                if (tx.tipo === 'receita') {
+                    if (!isPendente) { // Só soma receitas recebidas
+                        totalReceitas += tx.valor;
+                    }
+                } else { // Despesa
+                    if (isPendente) {
+                        totalPendentes += tx.valor;
+                        contasPendentes.push(tx);
+                    } else {
+                        totalDespesasPagas += tx.valor;
+                        
+                        // Somar para gráfico de categorias
+                        if (!gastosPorCategoria[tx.categoria]) {
+                            gastosPorCategoria[tx.categoria] = 0;
+                        }
+                        gastosPorCategoria[tx.categoria] += tx.valor;
+                    }
+                }
+            });
+
+            const saldoMes = totalReceitas - totalDespesasPagas;
+
+            // 2. Atualizar Cards
+            document.getElementById('dash-receitas').textContent = formatCurrency(totalReceitas);
+            document.getElementById('dash-despesas').textContent = formatCurrency(-totalDespesasPagas);
+            document.getElementById('dash-saldo').textContent = formatCurrency(saldoMes);
+            document.getElementById('dash-pendentes').textContent = formatCurrency(-totalPendentes);
+
+            // 3. Atualizar Gráfico de Categorias
+            const dashCategorias = document.getElementById('dash-categorias');
+            dashCategorias.innerHTML = '';
+            const sortedCategorias = Object.entries(gastosPorCategoria).sort(([,a],[,b]) => b-a);
+
+            if (sortedCategorias.length === 0) {
+                 dashCategorias.innerHTML = '<p class="text-slate-500">Nenhuma despesa paga este mês.</p>';
+            } else {
+                sortedCategorias.forEach(([nome, valor]) => {
+                    const perc = (valor / totalDespesasPagas) * 100;
+                    dashCategorias.innerHTML += `
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-sm font-medium text-slate-600">${nome}</span>
+                                <span class="text-sm font-medium text-slate-600">${formatCurrency(valor)}</span>
+                            </div>
+                            <div class="w-full bg-slate-200 rounded-full h-2.5">
+                                <div class="bg-indigo-500 h-2.5 rounded-full" style="width: ${perc}%"></div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            // 4. Atualizar Faturas Pendentes
+            const dashFaturas = document.getElementById('dash-faturas');
+            dashFaturas.innerHTML = '';
+            if (contasPendentes.length === 0) {
+                dashFaturas.innerHTML = '<li class="py-3 text-slate-500">Nenhuma conta pendente este mês.</li>';
+            } else {
+                contasPendentes.sort((a,b) => new Date(a.dataVencimento) - new Date(b.dataVencimento))
+                    .forEach(tx => {
+                        const dataVenc = new Date(tx.dataVencimento + 'T00:00:00-03:00').toLocaleDateString('pt-BR');
+                        dashFaturas.innerHTML += `
+                            <li class="py-3">
+                                <div class="flex items-center space-x-4">
+                                    <div class="flex-shrink-0">
+                                        <span class="text-lg">(${tx.conta.substring(0,1)})</span>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-medium text-slate-900 truncate">${tx.descricao} ${tx.parcela || ''}</p>
+                                        <p class="text-sm text-slate-500 truncate">Venc: ${dataVenc} (${tx.conta})</p>
+                                    </div>
+                                    <div class="text-base font-semibold text-red-600">${formatCurrency(-tx.valor)}</div>
+                                </div>
+                            </li>
+                        `;
+                    });
+            }
+        }
+
+        // --- MANIPULAÇÃO DE DADOS (CRUD) ---
+
+        async function handleAddTransaction(e) {
+            e.preventDefault();
+            const formData = new FormData(modalForm);
+            
+            const desc = formData.get('desc');
+            const tipo = formData.get('tipo');
+            const valor = parseFloat(formData.get('valor'));
+            const dataVenc = formData.get('venc');
+            const dataPagto = formData.get('pagto') || null; // Nulo se vazio
+            const categoria = formData.get('categoria');
+            const conta = formData.get('conta');
+            const parcelas = parseInt(formData.get('parcelas') || 1);
+
+            if (!desc || !valor || !dataVenc || !categoria || !conta) {
+                console.error("Formulário inválido");
+                return;
+            }
+
+            loadingOverlay.style.display = 'flex';
+            
+            try {
+                const transCollection = collection(db, transactionsCollectionPath);
+                
+                if (parcelas === 1) {
+                    // Lançamento único
+                    await addDoc(transCollection, {
+                        descricao: desc,
+                        tipo: tipo,
+                        valor: valor,
+                        dataVencimento: dataVenc,
+                        dataPagamento: dataPagto,
+                        categoria: categoria,
+                        conta: conta,
+                        parcela: null,
+                        criadoPor: currentUserId,
+                        criadoEm: new Date().toISOString()
+                    });
+                } else {
+                    // Lançamentos parcelados
+                    const valorParcela = valor / parcelas;
+                    const dataVencBase = new Date(dataVenc + 'T00:00:00-03:00');
+                    
+                    for (let i = 1; i <= parcelas; i++) {
+                        // Calcula data de vencimento da parcela
+                        const dataVencParcela = new Date(dataVencBase);
+                        dataVencParcela.setMonth(dataVencBase.getMonth() + (i - 1));
+                        
+                        await addDoc(transCollection, {
+                            descricao: desc,
+                            tipo: tipo,
+                            valor: valorParcela,
+                            dataVencimento: dataVencParcela.toISOString().split('T')[0], // Formato YYYY-MM-DD
+                            dataPagamento: null, // Parcelas futuras são sempre pendentes
+                            categoria: categoria,
+                            conta: conta,
+                            parcela: `(${i}/${parcelas})`,
+                            criadoPor: currentUserId,
+                            criadoEm: new Date().toISOString()
+                        });
+                    }
+                }
+                
+                console.log("Transação(ões) adicionada(s)!");
+                modalForm.reset();
+                document.getElementById('parcelas').value = 1; // Resetar parcelas
+                closeModal('add-modal');
+
+            } catch (error) {
+                console.error("Erro ao adicionar transação:", error);
+            } finally {
+                loadingOverlay.style.display = 'none';
+            }
+        }
+        
+        async function handleDeleteTransaction(id) {
+            // Não usamos 'confirm' pois pode ser bloqueado
+            const deveExcluir = true; // Simular confirmação
+            
+            if (deveExcluir) {
+                loadingOverlay.style.display = 'flex';
+                try {
+                    const docRef = doc(db, transactionsCollectionPath, id);
+                    await deleteDoc(docRef);
+                    console.log("Transação excluída:", id);
+                } catch (error) {
+                    console.error("Erro ao excluir transação:", error);
+                } finally {
+                    loadingOverlay.style.display = 'none';
+                }
+            }
+        }
+        
+        async function handleAddConfig(e) {
+            e.preventDefault();
+            const formId = e.target.id;
+            let input, collectionPath;
+            
+            if (formId === 'form-add-account') {
+                input = document.getElementById('input-account-name');
+                collectionPath = accountsCollectionPath;
+            } else {
+                input = document.getElementById('input-category-name');
+                collectionPath = categoriesCollectionPath;
+            }
+            
+            const name = input.value.trim();
+            if (!name) return;
+            
+            loadingOverlay.style.display = 'flex';
+            try {
+                const configCollection = collection(db, collectionPath);
+                await addDoc(configCollection, {
+                    name: name,
+                    criadoPor: currentUserId
+                });
+                console.log("Configuração adicionada:", name);
+                input.value = ''; // Limpa o input
+            } catch (error) {
+                console.error("Erro ao adicionar configuração:", error);
+            } finally {
+                loadingOverlay.style.display = 'none';
+            }
+        }
+        
+        async function handleDeleteConfig(id, collectionPath) {
+             const deveExcluir = true; // Simular confirmação
+             if (deveExcluir) {
+                loadingOverlay.style.display = 'flex';
+                try {
+                    const docRef = doc(db, collectionPath, id);
+                    await deleteDoc(docRef);
+                    console.log("Configuração excluída:", id);
+                } catch (error) {
+                    console.error("Erro ao excluir configuração:", error);
+                } finally {
+                    loadingOverlay.style.display = 'none';
+                }
+            }
+        }
+
+        // --- UTILITÁRIOS ---
+        
+        function formatCurrency(value) {
+            return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        // Funções globais para navegação e modal
+        window.showPage = (pageId) => {
+            document.querySelectorAll('.page-content').forEach(page => page.style.display = 'none');
+            document.querySelectorAll('.sidebar-button').forEach(btn => btn.classList.remove('active'));
+            
+            document.getElementById(pageId).style.display = 'block';
+            document.querySelector(`button[onclick="showPage('${pageId}')"]`).classList.add('active');
+        };
+
+        window.openModal = (modalId) => {
+            document.getElementById(modalId).style.display = 'flex';
+        };
+
+        window.closeModal = (modalId) => {
+            document.getElementById(modalId).style.display = 'none';
+        };
+
+        // --- INICIAR APLICAÇÃO ---
+        document.addEventListener('DOMContentLoaded', initFirebase);
+
+    </script>
+</body>
+</html>
