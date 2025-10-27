@@ -28,7 +28,7 @@
 
     <!-- Overlay de Carregamento -->
     <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style="display: flex;">
-        <div class="text-white text-lg font-medium">Carregando dados...</div>
+        <div id="loading-text" class="text-white text-lg font-medium">Carregando dados...</div>
     </div>
 
     <div class="flex flex-col md:flex-row h-screen">
@@ -190,7 +190,7 @@
                     </div>
 
                     <!-- Lista de Categorias -->
-                    <div class="bg-white p-6 rounded-lg shadow-md border-slate-200">
+                    <div class="bg-white p-6 rounded-lg shadow-md border border-slate-200">
                         <h3 class="text-lg font-semibold text-slate-800 mb-4">Minhas Categorias</h3>
                         <p class="text-sm text-slate-500 mb-4">Crie categorias para agrupar seus gastos (ex: Moradia, Alimentação).</p>
                          <form id="form-add-category" class="flex gap-2 mb-4">
@@ -291,7 +291,6 @@
         import { 
             getAuth, 
             signInAnonymously, 
-            signInWithCustomToken, 
             onAuthStateChanged 
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { 
@@ -310,14 +309,14 @@
         let allCategories = [];
         let allAccounts = [];
 
-        // Caminhos das coleções (compartilhados publicamente no app)
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const transactionsCollectionPath = `/artifacts/${appId}/public/data/transactions`;
-        const accountsCollectionPath = `/artifacts/${appId}/public/data/accounts`;
-        const categoriesCollectionPath = `/artifacts/${appId}/public/data/categories`;
+        // Caminhos das coleções
+        const transactionsCollectionPath = `transactions`;
+        const accountsCollectionPath = `accounts`;
+        const categoriesCollectionPath = `categories`;
 
         // Elementos da UI
         const loadingOverlay = document.getElementById('loading-overlay');
+        const loadingText = document.getElementById('loading-text');
         const userIdDisplay = document.getElementById('userIdDisplay');
         
         const filterMonth = document.getElementById('filter-month');
@@ -338,16 +337,21 @@
 
         function initFirebase() {
             try {
-                // Configuração do Firebase (fornecida pelo ambiente)
-                const firebaseConfigStr = typeof __firebase_config !== 'undefined' ? __firebase_config : '{}';
-                const firebaseConfig = JSON.parse(firebaseConfigStr);
-
-                if (!firebaseConfig.apiKey) {
-                    console.error("Configuração do Firebase não encontrada!");
-                    loadingOverlay.innerText = "Erro: Configuração do Firebase não encontrada.";
-                    return;
-                }
-
+                // ===================================================================
+                // Configuração do Firebase (Colada por você)
+                // ===================================================================
+                
+                const firebaseConfig = {
+                  apiKey: "AIzaSyBvtLDBIhCX-x5U-4UnWGEZqM7XO8yQ68g",
+                  authDomain: "meu-controle-financeiro-e80f6.firebaseapp.com",
+                  projectId: "meu-controle-financeiro-e80f6",
+                  storageBucket: "meu-controle-financeiro-e80f6.firebasestorage.app",
+                  messagingSenderId: "59168219749",
+                  appId: "1:59168219749:web:0c5f36bd8ad54a048a9c8c"
+                };
+                
+                // ===================================================================
+                
                 // Inicializar Firebase
                 const app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
@@ -359,36 +363,32 @@
 
             } catch (error) {
                 console.error("Erro ao inicializar Firebase:", error);
-                loadingOverlay.innerText = "Erro ao carregar a aplicação.";
+                loadingText.innerText = "Erro ao carregar a aplicação.";
             }
         }
         
         async function handleAuthentication() {
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
+                    // Usuário está logado
                     console.log("Usuário autenticado:", user.uid);
                     currentUserId = user.uid;
                     userIdDisplay.textContent = currentUserId; // Mostra o ID na tela
                     
-                    // Usuário está logado, carregar todos os dados
+                    // Carregar todos os dados
                     await loadInitialData();
                     loadingOverlay.style.display = 'none';
 
                 } else {
                     // Usuário não está logado, tentar login
-                    console.log("Nenhum usuário logado, tentando autenticação...");
+                    console.log("Nenhum usuário logado, tentando autenticação anônima...");
                     try {
-                        // Tenta usar o token inicial fornecido pelo ambiente
-                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                            await signInWithCustomToken(auth, __initial_auth_token);
-                        } else {
-                            // Fallback para login anônimo
-                            await signInAnonymously(auth);
-                        }
+                        // No GitHub Pages, sempre usaremos o login Anônimo
+                        await signInAnonymously(auth);
                         // O onAuthStateChanged será disparado novamente após o login
                     } catch (error) {
-                        console.error("Erro ao autenticar:", error);
-                        loadingOverlay.innerText = "Erro ao autenticar.";
+                        console.error("Erro ao autenticar anonimamente:", error);
+                        loadingText.innerText = "Erro ao autenticar.";
                     }
                 }
             });
@@ -512,8 +512,6 @@
 
         function loadTransactions() {
             const transCollection = collection(db, transactionsCollectionPath);
-            // NOTA: Para um app real, seria preciso paginar ou filtrar por data no 'query'.
-            // Para este cenário de casal, carregar tudo é aceitável.
             onSnapshot(transCollection, (snapshot) => {
                 allTransactions = [];
                 transactionsTableBody.innerHTML = '';
@@ -525,7 +523,12 @@
                 snapshot.docs.forEach(doc => {
                     const tx = { id: doc.id, ...doc.data() };
                     allTransactions.push(tx);
-                    
+                });
+                
+                // Ordenar transações por data de vencimento (mais recentes primeiro)
+                allTransactions.sort((a, b) => new Date(b.dataVencimento) - new Date(a.dataVencimento));
+
+                allTransactions.forEach(tx => {
                     const tr = renderTransactionRow(tx);
                     transactionsTableBody.appendChild(tr);
                 });
@@ -553,9 +556,9 @@
             const valorClass = tx.tipo === 'receita' ? 'text-green-600' : 'text-red-600';
             const valor = (tx.tipo === 'receita' ? 1 : -1) * tx.valor;
             
-            // Formatar datas (DD/MM/YYYY)
-            const dataVenc = new Date(tx.dataVencimento + 'T00:00:00-03:00').toLocaleDateString('pt-BR');
-            const dataPagto = tx.dataPagamento ? new Date(tx.dataPagamento + 'T00:00:00-03:00').toLocaleDateString('pt-BR') : '---';
+            // Formatar datas (DD/MM/YYYY) - Adicionando T00:00:00 para evitar problemas de fuso horário
+            const dataVenc = new Date(tx.dataVencimento + 'T00:00:00').toLocaleDateString('pt-BR');
+            const dataPagto = tx.dataPagamento ? new Date(tx.dataPagamento + 'T00:00:00').toLocaleDateString('pt-BR') : '---';
 
             tr.innerHTML = `
                 <td class="p-4 whitespace-nowrap text-sm font-medium text-slate-900">${tx.descricao} ${tx.parcela || ''}</td>
@@ -581,7 +584,7 @@
 
             // 1. Filtrar transações pelo mês e ano selecionados
             const filteredTransactions = transactions.filter(tx => {
-                const txDate = new Date(tx.dataVencimento + 'T00:00:00-03:00'); // Usar data de vencimento para o dashboard
+                const txDate = new Date(tx.dataVencimento + 'T00:00:00'); // Usar data de vencimento para o dashboard
                 return txDate.getMonth() === selectedMonth && txDate.getFullYear() === selectedYear;
             });
 
@@ -654,12 +657,12 @@
             } else {
                 contasPendentes.sort((a,b) => new Date(a.dataVencimento) - new Date(b.dataVencimento))
                     .forEach(tx => {
-                        const dataVenc = new Date(tx.dataVencimento + 'T00:00:00-03:00').toLocaleDateString('pt-BR');
+                        const dataVenc = new Date(tx.dataVencimento + 'T00:00:00').toLocaleDateString('pt-BR');
                         dashFaturas.innerHTML += `
                             <li class="py-3">
                                 <div class="flex items-center space-x-4">
                                     <div class="flex-shrink-0">
-                                        <span class="text-lg">(${tx.conta.substring(0,1)})</span>
+                                        <span class="text-lg">💳</span>
                                     </div>
                                     <div class="flex-1 min-w-0">
                                         <p class="text-sm font-medium text-slate-900 truncate">${tx.descricao} ${tx.parcela || ''}</p>
@@ -715,7 +718,7 @@
                 } else {
                     // Lançamentos parcelados
                     const valorParcela = valor / parcelas;
-                    const dataVencBase = new Date(dataVenc + 'T00:00:00-03:00');
+                    const dataVencBase = new Date(dataVenc + 'T00:00:00');
                     
                     for (let i = 1; i <= parcelas; i++) {
                         // Calcula data de vencimento da parcela
@@ -751,9 +754,10 @@
         
         async function handleDeleteTransaction(id) {
             // Não usamos 'confirm' pois pode ser bloqueado
-            const deveExcluir = true; // Simular confirmação
+            // Vamos apenas perguntar com um 'prompt' simples (que não é ideal, mas funciona)
+            const confirmDelete = prompt("Tem certeza que quer excluir este lançamento? Digite 'sim' para confirmar.");
             
-            if (deveExcluir) {
+            if (confirmDelete === 'sim') {
                 loadingOverlay.style.display = 'flex';
                 try {
                     const docRef = doc(db, transactionsCollectionPath, id);
@@ -800,8 +804,8 @@
         }
         
         async function handleDeleteConfig(id, collectionPath) {
-             const deveExcluir = true; // Simular confirmação
-             if (deveExcluir) {
+             const confirmDelete = prompt("Tem certeza que quer excluir este item? Digite 'sim' para confirmar.");
+             if (confirmDelete === 'sim') {
                 loadingOverlay.style.display = 'flex';
                 try {
                     const docRef = doc(db, collectionPath, id);
