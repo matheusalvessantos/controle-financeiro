@@ -33,6 +33,11 @@
         .action-btn:hover {
             background-color: #e5e7eb; /* gray-200 */
         }
+        
+        /* Esconder campos do formulário por padrão */
+        #tipo-despesa-row, #tipo-valor-row {
+            display: none;
+        }
     </style>
 </head>
 <body class="bg-slate-100">
@@ -147,10 +152,25 @@
                         <h2 class="text-3xl font-bold text-slate-800">Meus Lançamentos</h2>
                         <p class="text-slate-600">O banco de dados central de todas as suas movimentações.</p>
                     </div>
-                    <button onclick="openModal('add-modal')" class="mt-4 md:mt-0 bg-indigo-600 text-white font-medium px-4 py-2 rounded-lg shadow-md hover:bg-indigo-700 flex items-center space-x-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                        <span>Adicionar Lançamento</span>
-                    </button>
+                    <!-- NOVO: Filtros de Mês/Ano para Lançamentos -->
+                    <div class="flex gap-4 mt-4 md:mt-0">
+                        <div>
+                            <label for="tx-filter-month" class="block text-sm font-medium text-slate-700">Mês</label>
+                            <select id="tx-filter-month" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
+                                <!-- Preenchido por JS -->
+                            </select>
+                        </div>
+                        <div>
+                            <label for="tx-filter-year" class="block text-sm font-medium text-slate-700">Ano</label>
+                            <select id="tx-filter-year" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm">
+                                <!-- Preenchido por JS -->
+                            </select>
+                        </div>
+                        <button onclick="openModal('add-modal')" class="mt-4 md:mt-0 self-end bg-indigo-600 text-white font-medium px-4 py-2 rounded-lg shadow-md hover:bg-indigo-700 flex items-center space-x-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                            <span>Adicionar</span>
+                        </button>
+                    </div>
                 </header>
 
                 <!-- Tabela de Lançamentos -->
@@ -171,8 +191,8 @@
                                 </tr>
                             </thead>
                             <tbody id="transactions-table-body" class="bg-white divide-y divide-slate-200">
-                                <!-- Linhas preenchidas por JS -->
-                                <tr><td colspan="9" class="p-4 text-center text-slate-500">Nenhum lançamento encontrado.</td></tr>
+                                <!-- Linhas preenchidas por JS com base no filtro -->
+                                <tr><td colspan="9" class="p-4 text-center text-slate-500">Carregando lançamentos...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -246,7 +266,8 @@
                                 <option value="receita">Receita</option>
                             </select>
                         </div>
-                         <div>
+                         <!-- NOVO: Campo Tipo de Despesa -->
+                         <div id="tipo-despesa-row">
                             <label for="tipoDespesa" class="block text-sm font-medium text-slate-700">Tipo de Despesa</label>
                             <select id="tipoDespesa" name="tipoDespesa" class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" required>
                                 <option value="Variavel">Variável</option>
@@ -260,7 +281,8 @@
                             <label for="valor" class="block text-sm font-medium text-slate-700">Valor</label>
                             <input type="number" id="valor" name="valor" step="0.01" class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="0,00" required>
                         </div>
-                        <div>
+                         <!-- NOVO: Campo Tipo de Valor (Variável/Parcelas) -->
+                        <div id="tipo-valor-row">
                             <label for="tipoValor" class="block text-sm font-medium text-slate-700">Tipo de Valor</label>
                             <select id="tipoValor" name="tipoValor" class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" required>
                                 <option value="parcela">Valor da Parcela</option>
@@ -296,8 +318,9 @@
                     </div>
 
                      <div>
-                        <label for="parcelas" class="block text-sm font-medium text-slate-700">Nº de Parcelas (ex: 1, 6, 12)</label>
-                        <input type="number" id="parcelas" name="parcelas" class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" value="1" min="1" placeholder="1 (se for à vista)" required>
+                        <!-- NOVO: Label dinâmico -->
+                        <label id="parcelas-label" for="parcelas" class="block text-sm font-medium text-slate-700">Nº de Parcelas (1 = à vista)</label>
+                        <input type="number" id="parcelas" name="parcelas" class="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" value="1" min="1" placeholder="1" required>
                     </div>
                 </div>
                 <!-- Modal Footer -->
@@ -327,7 +350,7 @@
             doc, 
             addDoc, 
             deleteDoc,
-            updateDoc, // << NOVO: Importado para editar o status
+            updateDoc,
             collection, 
             onSnapshot,
             setLogLevel
@@ -349,14 +372,27 @@
         const loadingText = document.getElementById('loading-text');
         const userIdDisplay = document.getElementById('userIdDisplay');
         
+        // Filtros do Dashboard
         const filterMonth = document.getElementById('filter-month');
         const filterYear = document.getElementById('filter-year');
+        
+        // NOVO: Filtros da Tabela de Lançamentos
+        const txFilterMonth = document.getElementById('tx-filter-month');
+        const txFilterYear = document.getElementById('tx-filter-year');
         
         const transactionsTableBody = document.getElementById('transactions-table-body');
         const accountsList = document.getElementById('accounts-list');
         const categoriesList = document.getElementById('categories-list');
         
+        // Elementos do Modal
         const modalForm = document.getElementById('form-add-transaction');
+        const tipoSelect = document.getElementById('tipo');
+        const tipoDespesaRow = document.getElementById('tipo-despesa-row');
+        const tipoDespesaSelect = document.getElementById('tipoDespesa');
+        const tipoValorRow = document.getElementById('tipo-valor-row');
+        const parcelasLabel = document.getElementById('parcelas-label');
+        const parcelasInput = document.getElementById('parcelas');
+        
         const formAddAccount = document.getElementById('form-add-account');
         const formAddCategory = document.getElementById('form-add-category');
         
@@ -367,10 +403,7 @@
 
         function initFirebase() {
             try {
-                // ===================================================================
-                // Configuração do Firebase (Colada por você)
-                // ===================================================================
-                
+                // Configuração do Firebase
                 const firebaseConfig = {
                   apiKey: "AIzaSyBvtLDBIhCX-x5U-4UnWGEZqM7XO8yQ68g",
                   authDomain: "meu-controle-financeiro-e80f6.firebaseapp.com",
@@ -380,15 +413,11 @@
                   appId: "1:59168219749:web:0c5f36bd8ad54a048a9c8c"
                 };
                 
-                // ===================================================================
-                
-                // Inicializar Firebase
                 const app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
-                setLogLevel('debug'); // Habilita logs do Firestore no console
+                setLogLevel('debug'); 
 
-                // Lidar com autenticação
                 handleAuthentication();
 
             } catch (error) {
@@ -400,22 +429,15 @@
         async function handleAuthentication() {
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
-                    // Usuário está logado
-                    console.log("Usuário autenticado:", user.uid);
                     currentUserId = user.uid;
-                    userIdDisplay.textContent = currentUserId; // Mostra o ID na tela
-                    
-                    // Carregar todos os dados
+                    userIdDisplay.textContent = currentUserId; 
                     await loadInitialData();
                     loadingOverlay.style.display = 'none';
 
                 } else {
-                    // Usuário não está logado, tentar login
                     console.log("Nenhum usuário logado, tentando autenticação anônima...");
                     try {
-                        // No GitHub Pages, sempre usaremos o login Anônimo
                         await signInAnonymously(auth);
-                        // O onAuthStateChanged será disparado novamente após o login
                     } catch (error) {
                         console.error("Erro ao autenticar anonimamente:", error);
                         loadingText.innerText = "Erro ao autenticar.";
@@ -425,16 +447,18 @@
         }
         
         async function loadInitialData() {
-            // Preencher filtros de data
+            // Preencher filtros de data (ambos os pares)
             setupDateFilters();
 
             // Carregar dados e configurar listeners em tempo real
             loadCategories();
             loadAccounts();
-            loadTransactions(); // Esta função também chamará updateDashboard
+            loadTransactions(); // Esta função agora atualiza tudo
 
             // Configurar listeners de UI
             setupUIListeners();
+            // Disparar a lógica inicial do formulário
+            updateModalFormLogic();
         }
         
         function setupDateFilters() {
@@ -442,31 +466,85 @@
             const currentMonth = new Date().getMonth();
             const currentYear = new Date().getFullYear();
 
+            // Limpar ambos os filtros
             filterMonth.innerHTML = '';
+            filterYear.innerHTML = '';
+            txFilterMonth.innerHTML = '';
+            txFilterYear.innerHTML = '';
+
+            // Preencher filtros do Dashboard
             months.forEach((month, index) => {
-                const option = new Option(month, index); // Valor é 0-11
+                const option = new Option(month, index);
                 option.selected = (index === currentMonth);
-                filterMonth.add(option);
+                filterMonth.add(option.cloneNode(true));
+                txFilterMonth.add(option.cloneNode(true)); // Clona para o filtro da tabela
             });
 
-            filterYear.innerHTML = '';
+            // Preencher filtros de Ano
             for (let i = currentYear - 3; i <= currentYear + 3; i++) {
                 const option = new Option(i, i);
                 option.selected = (i === currentYear);
-                filterYear.add(option);
+                filterYear.add(option.cloneNode(true));
+                txFilterYear.add(option.cloneNode(true)); // Clona para o filtro da tabela
             }
             
+            // Listeners do Dashboard
             filterMonth.addEventListener('change', () => updateDashboard(allTransactions));
             filterYear.addEventListener('change', () => updateDashboard(allTransactions));
+            
+            // NOVO: Listeners da Tabela de Lançamentos
+            txFilterMonth.addEventListener('change', renderTransactionsTable);
+            txFilterYear.addEventListener('change', renderTransactionsTable);
         }
         
         function setupUIListeners() {
             modalForm.addEventListener('submit', handleAddTransaction);
             formAddAccount.addEventListener('submit', handleAddConfig);
             formAddCategory.addEventListener('submit', handleAddConfig);
+            
+            // NOVO: Listeners para lógica do formulário
+            tipoSelect.addEventListener('change', updateModalFormLogic);
+            tipoDespesaSelect.addEventListener('change', updateModalFormLogic);
+            parcelasInput.addEventListener('input', updateModalFormLogic);
         }
 
-        // --- CARREGAMENTO DE DADOS (FIRESTORE ONMOMENT) ---
+        // --- LÓGICA DO FORMULÁRIO (NOVO) ---
+
+        function updateModalFormLogic() {
+            const tipo = tipoSelect.value;
+            const tipoDespesa = tipoDespesaSelect.value;
+            const parcelas = parseInt(parcelasInput.value) || 1;
+
+            if (tipo === 'receita') {
+                // Se for receita, esconder tipo de despesa
+                tipoDespesaRow.style.display = 'none';
+                // Receita é sempre "Valor da Parcela" (ou único)
+                tipoValorRow.style.display = 'none';
+                parcelasLabel.textContent = "Repetir por (Meses)";
+            } else {
+                // Se for despesa, mostrar tipo de despesa
+                tipoDespesaRow.style.display = 'block';
+
+                if (tipoDespesa === 'Fixa') {
+                    // Despesa Fixa (Recorrência)
+                    parcelasLabel.textContent = "Lançar para os próximos (meses)";
+                    tipoValorRow.style.display = 'none'; // Valor de despesa fixa é sempre o valor mensal
+                
+                } else {
+                    // Despesa Variável (Parcelas)
+                    parcelasLabel.textContent = "Nº de Parcelas (1 = à vista)";
+                    // Se for mais de 1 parcela, mostrar opção "Total" vs "Parcela"
+                    if (parcelas > 1) {
+                        tipoValorRow.style.display = 'block';
+                    } else {
+                        tipoValorRow.style.display = 'none';
+                    }
+                }
+            }
+        }
+
+
+        // --- CARREGAMENTO DE DADOS (FIRESTORE ONSNAPSHOT) ---
 
         function loadCategories() {
             const categoriesCollection = collection(db, categoriesCollectionPath);
@@ -484,7 +562,6 @@
                     const category = { id: doc.id, ...doc.data() };
                     allCategories.push(category);
                     
-                    // Renderizar na lista de Config
                     const li = document.createElement('li');
                     li.className = "py-2 flex justify-between items-center";
                     li.innerHTML = `
@@ -493,11 +570,9 @@
                     `;
                     categoriesList.appendChild(li);
                     
-                    // Adicionar ao select do Modal
                     selectCategoria.add(new Option(category.name, category.name));
                 });
                 
-                // Adicionar listeners aos botões de excluir
                 document.querySelectorAll('.delete-config-btn[data-type="category"]').forEach(btn => {
                    btn.addEventListener('click', () => handleDeleteConfig(btn.dataset.id, categoriesCollectionPath));
                 });
@@ -520,7 +595,6 @@
                     const account = { id: doc.id, ...doc.data() };
                     allAccounts.push(account);
                     
-                    // Renderizar na lista de Config
                     const li = document.createElement('li');
                     li.className = "py-2 flex justify-between items-center";
                     li.innerHTML = `
@@ -529,11 +603,9 @@
                     `;
                     accountsList.appendChild(li);
                     
-                    // Adicionar ao select do Modal
                     selectConta.add(new Option(account.name, account.name));
                 });
                 
-                // Adicionar listeners aos botões de excluir
                 document.querySelectorAll('.delete-config-btn[data-type="account"]').forEach(btn => {
                    btn.addEventListener('click', () => handleDeleteConfig(btn.dataset.id, accountsCollectionPath));
                 });
@@ -544,12 +616,6 @@
             const transCollection = collection(db, transactionsCollectionPath);
             onSnapshot(transCollection, (snapshot) => {
                 allTransactions = [];
-                transactionsTableBody.innerHTML = '';
-
-                if (snapshot.empty) {
-                    transactionsTableBody.innerHTML = '<tr><td colspan="9" class="p-4 text-center text-slate-500">Nenhum lançamento encontrado.</td></tr>';
-                }
-
                 snapshot.docs.forEach(doc => {
                     const tx = { id: doc.id, ...doc.data() };
                     allTransactions.push(tx);
@@ -558,17 +624,38 @@
                 // Ordenar transações por data de vencimento (mais recentes primeiro)
                 allTransactions.sort((a, b) => new Date(b.dataVencimento) - new Date(a.dataVencimento));
 
-                allTransactions.forEach(tx => {
-                    const tr = renderTransactionRow(tx);
-                    transactionsTableBody.appendChild(tr);
-                });
-                
-                // Atualizar o dashboard com os novos dados
-                updateDashboard(allTransactions);
+                // ATUALIZADO: Renderizar Tabela e Dashboard
+                renderTransactionsTable(); // Renderiza a tabela filtrada
+                updateDashboard(allTransactions); // Atualiza o dashboard com todos os dados
             });
         }
 
         // --- RENDERIZAÇÃO E LÓGICA DE UI ---
+
+        // NOVO: Esta função agora renderiza a tabela com base nos filtros
+        function renderTransactionsTable() {
+            transactionsTableBody.innerHTML = ''; // Limpa a tabela
+            
+            const selectedMonth = parseInt(txFilterMonth.value); // 0-11
+            const selectedYear = parseInt(txFilterYear.value);
+
+            // Filtrar transações pelo mês e ano selecionados na página de Lançamentos
+            const filteredTransactions = allTransactions.filter(tx => {
+                const txDate = new Date(tx.dataVencimento + 'T00:00:00'); // Usar data de vencimento
+                return txDate.getMonth() === selectedMonth && txDate.getFullYear() === selectedYear;
+            });
+
+            if (filteredTransactions.length === 0) {
+                transactionsTableBody.innerHTML = '<tr><td colspan="9" class="p-4 text-center text-slate-500">Nenhum lançamento para este mês.</td></tr>';
+                return;
+            }
+
+            // Renderizar apenas as linhas filtradas
+            filteredTransactions.forEach(tx => {
+                const tr = renderTransactionRow(tx);
+                transactionsTableBody.appendChild(tr);
+            });
+        }
 
         function renderTransactionRow(tx) {
             const tr = document.createElement('tr');
@@ -583,14 +670,12 @@
             const valorClass = tx.tipo === 'receita' ? 'text-green-600' : 'text-red-600';
             const valor = (tx.tipo === 'receita' ? 1 : -1) * tx.valor;
             
-            // Formatar datas (DD/MM/YYYY) - Adicionando T00:00:00 para evitar problemas de fuso horário
             const dataVenc = new Date(tx.dataVencimento + 'T00:00:00').toLocaleDateString('pt-BR');
             const dataPagto = tx.dataPagamento ? new Date(tx.dataPagamento + 'T00:00:00').toLocaleDateString('pt-BR') : '---';
             
-            // Botão de Ação de Status (NOVO)
             const statusButtonIcon = isPendente ? 
-                `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600"><path d="M20 6 9 17l-5-5"></path></svg>` : // Ícone "Marcar Pago" (check)
-                `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-orange-600"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`; // Ícone "Marcar Pendente" (relógio)
+                `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600"><path d="M20 6 9 17l-5-5"></path></svg>` : 
+                `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-orange-600"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`; 
             const statusButtonTitle = isPendente ? "Marcar como Pago" : "Marcar como Pendente";
 
             tr.innerHTML = `
@@ -617,12 +702,12 @@
         }
 
         function updateDashboard(transactions) {
-            const selectedMonth = parseInt(filterMonth.value); // 0-11
+            const selectedMonth = parseInt(filterMonth.value); 
             const selectedYear = parseInt(filterYear.value);
 
-            // 1. Filtrar transações pelo mês e ano selecionados
+            // 1. Filtrar transações do Dashboard
             const filteredTransactions = transactions.filter(tx => {
-                const txDate = new Date(tx.dataVencimento + 'T00:00:00'); // Usar data de vencimento para o dashboard
+                const txDate = new Date(tx.dataVencimento + 'T00:00:00'); 
                 return txDate.getMonth() === selectedMonth && txDate.getFullYear() === selectedYear;
             });
 
@@ -636,7 +721,7 @@
                 const isPendente = !tx.dataPagamento;
 
                 if (tx.tipo === 'receita') {
-                    if (!isPendente) { // Só soma receitas recebidas
+                    if (!isPendente) { 
                         totalReceitas += tx.valor;
                     }
                 } else { // Despesa
@@ -646,7 +731,6 @@
                     } else {
                         totalDespesasPagas += tx.valor;
                         
-                        // Somar para gráfico de categorias
                         if (!gastosPorCategoria[tx.categoria]) {
                             gastosPorCategoria[tx.categoria] = 0;
                         }
@@ -672,7 +756,7 @@
                  dashCategorias.innerHTML = '<p class="text-slate-500">Nenhuma despesa paga este mês.</p>';
             } else {
                 sortedCategorias.forEach(([nome, valor]) => {
-                    const perc = (valor / totalDespesasPagas) * 100;
+                    const perc = (totalDespesasPagas > 0) ? (valor / totalDespesasPagas) * 100 : 0;
                     dashCategorias.innerHTML += `
                         <div>
                             <div class="flex justify-between mb-1">
@@ -721,75 +805,60 @@
             const formData = new FormData(modalForm);
             
             const desc = formData.get('desc');
-            const tipo = formData.get('tipo'); // receita ou despesa
-            const tipoDespesa = formData.get('tipoDespesa'); // fixa ou variavel
+            const tipo = formData.get('tipo'); 
+            const tipoDespesa = (tipo === 'receita') ? null : formData.get('tipoDespesa');
             const valor = parseFloat(formData.get('valor'));
-            const tipoValor = formData.get('tipoValor'); // parcela ou total
+            const tipoValor = formData.get('tipoValor'); 
             const dataVenc = formData.get('venc');
-            const dataPagto = formData.get('pagto') || null; // Nulo se vazio
+            const dataPagto = formData.get('pagto') || null; 
             const categoria = formData.get('categoria');
             const conta = formData.get('conta');
             const parcelas = parseInt(formData.get('parcelas') || 1);
 
-            if (!desc || !valor || !dataVenc || !categoria || !conta || !tipoDespesa || !tipoValor) {
+            if (!desc || !valor || !dataVenc || !categoria || !conta || (tipo === 'despesa' && !tipoDespesa)) {
                 console.error("Formulário inválido", Object.fromEntries(formData));
                 return;
             }
 
             loadingOverlay.style.display = 'flex';
             
-            // LÓGICA CORRIGIDA para Valor da Parcela vs Total
-            const valorParcela = (tipoValor === 'total') ? (valor / parcelas) : valor;
+            // Lógica de Valor
+            // Se for despesa fixa, o valor é sempre o da parcela.
+            // Se for variável, checar se é total ou parcela.
+            let valorParcela = valor;
+            if (tipo === 'despesa' && tipoDespesa === 'Variavel' && parcelas > 1 && tipoValor === 'total') {
+                 valorParcela = (valor / parcelas);
+            }
             
             try {
                 const transCollection = collection(db, transactionsCollectionPath);
+                const dataVencBase = new Date(dataVenc + 'T00:00:00');
                 
-                if (parcelas === 1) {
-                    // Lançamento único
+                for (let i = 1; i <= parcelas; i++) {
+                    const dataVencParcela = new Date(dataVencBase);
+                    dataVencParcela.setMonth(dataVencBase.getMonth() + (i - 1));
+                    
+                    const dataPagtoParcela = (i === 1) ? dataPagto : null;
+                    const labelParcela = (parcelas > 1) ? `(${i}/${parcelas})` : null;
+                    
                     await addDoc(transCollection, {
                         descricao: desc,
                         tipo: tipo,
-                        tipoDespesa: (tipo === 'receita') ? null : tipoDespesa,
-                        valor: valorParcela, // Usa valorParcela mesmo se for 1
-                        dataVencimento: dataVenc,
-                        dataPagamento: dataPagto,
+                        tipoDespesa: tipoDespesa,
+                        valor: valorParcela,
+                        dataVencimento: dataVencParcela.toISOString().split('T')[0],
+                        dataPagamento: dataPagtoParcela,
                         categoria: categoria,
                         conta: conta,
-                        parcela: null,
+                        parcela: labelParcela,
                         criadoPor: currentUserId,
                         criadoEm: new Date().toISOString()
                     });
-                } else {
-                    // Lançamentos parcelados
-                    const dataVencBase = new Date(dataVenc + 'T00:00:00');
-                    
-                    for (let i = 1; i <= parcelas; i++) {
-                        // Calcula data de vencimento da parcela
-                        const dataVencParcela = new Date(dataVencBase);
-                        dataVencParcela.setMonth(dataVencBase.getMonth() + (i - 1));
-                        
-                        // LÓGICA CORRIGIDA: Apenas a primeira parcela recebe a data de pagto.
-                        const dataPagtoParcela = (i === 1) ? dataPagto : null;
-                        
-                        await addDoc(transCollection, {
-                            descricao: desc,
-                            tipo: tipo,
-                            tipoDespesa: (tipo === 'receita') ? null : tipoDespesa,
-                            valor: valorParcela,
-                            dataVencimento: dataVencParcela.toISOString().split('T')[0], // Formato YYYY-MM-DD
-                            dataPagamento: dataPagtoParcela, // CORRIGIDO
-                            categoria: categoria,
-                            conta: conta,
-                            parcela: `(${i}/${parcelas})`,
-                            criadoPor: currentUserId,
-                            criadoEm: new Date().toISOString()
-                        });
-                    }
                 }
                 
                 console.log("Transação(ões) adicionada(s)!");
                 modalForm.reset();
-                document.getElementById('parcelas').value = 1; // Resetar parcelas
+                updateModalFormLogic(); // Reseta a lógica do formulário
                 closeModal('add-modal');
 
             } catch (error) {
@@ -799,34 +868,27 @@
             }
         }
         
-        // NOVO: Função para alterar o status de pagamento
         async function handleToggleStatus(id, isPaid) {
             loadingOverlay.style.display = 'flex';
             const docRef = doc(db, transactionsCollectionPath, id);
             
             try {
                 if (isPaid) {
-                    // Se estava pago (isPaid = true), marcar como pendente
                     await updateDoc(docRef, { dataPagamento: null });
                 } else {
-                    // Se estava pendente (isPaid = false), marcar como pago hoje
                     const hoje = new Date().toISOString().split('T')[0];
                     await updateDoc(docRef, { dataPagamento: hoje });
                 }
-                console.log("Status da transação atualizado:", id);
             } catch (error) {
                 console.error("Erro ao atualizar status:", error);
             } finally {
                 loadingOverlay.style.display = 'none';
             }
         }
-        // Disponibiliza a função globalmente
         window.handleToggleStatus = handleToggleStatus;
 
         
         async function handleDeleteTransaction(id) {
-            // Não usamos 'confirm' pois pode ser bloqueado
-            // Vamos apenas perguntar com um 'prompt' simples (que não é ideal, mas funciona)
             const confirmDelete = prompt("Tem certeza que quer excluir este lançamento? Digite 'sim' para confirmar.");
             
             if (confirmDelete === 'sim') {
@@ -834,7 +896,6 @@
                 try {
                     const docRef = doc(db, transactionsCollectionPath, id);
                     await deleteDoc(docRef);
-                    console.log("Transação excluída:", id);
                 } catch (error) {
                     console.error("Erro ao excluir transação:", error);
                 } finally {
@@ -842,9 +903,7 @@
                 }
             }
         }
-        // Disponibiliza a função globalmente
         window.handleDeleteTransaction = handleDeleteTransaction;
-
         
         async function handleAddConfig(e) {
             e.preventDefault();
@@ -869,8 +928,7 @@
                     name: name,
                     criadoPor: currentUserId
                 });
-                console.log("Configuração adicionada:", name);
-                input.value = ''; // Limpa o input
+                input.value = ''; 
             } catch (error) {
                 console.error("Erro ao adicionar configuração:", error);
             } finally {
@@ -885,7 +943,6 @@
                 try {
                     const docRef = doc(db, collectionPath, id);
                     await deleteDoc(docRef);
-                    console.log("Configuração excluída:", id);
                 } catch (error) {
                     console.error("Erro ao excluir configuração:", error);
                 } finally {
@@ -893,7 +950,6 @@
                 }
             }
         }
-        // Disponibiliza a função globalmente
         document.querySelectorAll('.delete-config-btn').forEach(btn => {
             btn.addEventListener('click', () => handleDeleteConfig(btn.dataset.id, btn.dataset.type === 'category' ? categoriesCollectionPath : accountsCollectionPath));
         });
@@ -904,7 +960,6 @@
             return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         }
 
-        // Funções globais para navegação e modal
         window.showPage = (pageId) => {
             document.querySelectorAll('.page-content').forEach(page => page.style.display = 'none');
             document.querySelectorAll('.sidebar-button').forEach(btn => btn.classList.remove('active'));
@@ -921,11 +976,11 @@
             document.getElementById(modalId).style.display = 'none';
         };
 
-        // --- INICIAR APLICAÇÃO ---
         document.addEventListener('DOMContentLoaded', initFirebase);
-
     </script>
 </body>
 </html>
+
+
 
 
