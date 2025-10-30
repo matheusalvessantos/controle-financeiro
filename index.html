@@ -867,7 +867,11 @@
                 
                 // Gerar cores dinâmicas a partir da paleta
                 const colors = dataValues.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]);
+                
+                // *** CORREÇÃO v6.3: Verifica o modo escuro no momento da renderização ***
                 const isDarkMode = document.documentElement.classList.contains('dark');
+                const legendColor = isDarkMode ? '#e2e8f0' : '#334155'; // Cor do texto da legenda
+                const borderColor = isDarkMode ? '#1f2937' : '#ffffff'; // Cor de fundo do card
 
                 categoryChartInstance = new Chart(ctx, {
                     type: 'doughnut', // Gráfico de rosca
@@ -877,9 +881,7 @@
                             label: 'Gastos',
                             data: dataValues,
                             backgroundColor: colors,
-                            // *** CORREÇÃO v6.2 ***
-                            // A borda agora combina com o fundo do card (gray-800 ou white)
-                            borderColor: isDarkMode ? '#1f2937' : '#FFF', 
+                            borderColor: borderColor, // Borda combina com o fundo do card
                             borderWidth: 3
                         }]
                     },
@@ -890,7 +892,7 @@
                             legend: {
                                 position: 'bottom', // Legenda embaixo
                                 labels: {
-                                    color: isDarkMode ? '#e2e8f0' : '#334155', // Cor do texto da legenda
+                                    color: legendColor, // Cor do texto corrigida
                                     padding: 15,
                                     font: {
                                         family: 'Inter',
@@ -1244,6 +1246,10 @@
             // Recarrega os dados da página de orçamento se ela for aberta
             if (pageId === 'page-orcamento') {
                 renderBudgetsPage();
+            }
+            // Força a atualização do dashboard (e do gráfico) se for a página do dashboard
+            if (pageId === 'page-dashboard') {
+                updateDashboard(allTransactions);
             }
         };
 
