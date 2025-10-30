@@ -9,13 +9,40 @@
     <!-- Adicionado Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        // Script para evitar "flash" do modo escuro. Tem que estar no <head>.
-        // Esta lógica LÊ a preferência do sistema.
-        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
+        // Script para evitar "flash" do modo escuro e ouvir mudanças.
+        
+        function applyTheme(isDark) {
+            if (isDark) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
         }
+
+        const matcher = window.matchMedia('(prefers-color-scheme: dark)');
+        
+        // 1. Aplica o tema na carga inicial (respeitando localStorage se existir)
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+            applyTheme(savedTheme === 'dark');
+        } else {
+            applyTheme(matcher.matches);
+        }
+
+        // 2. Ouve por mudanças em tempo real
+        matcher.addEventListener('change', (e) => {
+            // Só segue o sistema se o usuário não tiver uma preferência salva
+            // (Se tivéssemos um botão de troca, isso seria útil)
+            if (!localStorage.getItem('theme')) {
+                applyTheme(e.matches);
+                
+                // Força o redesenho do gráfico do dashboard se ele estiver visível
+                // A função é definida no <script type="module">
+                if (typeof window.forceRedrawDashboardChart === 'function') {
+                    window.forceRedrawDashboardChart();
+                }
+            }
+        });
     </script>
     <style>
         body {
@@ -75,7 +102,7 @@
         <!-- Sidebar (Navegação Principal) -->
         <nav class="bg-gray-900 text-slate-300 w-full md:w-64 p-4 space-y-2 flex-shrink-0 flex flex-col">
             <div>
-                <h1 class="text-2xl font-bold text-white mb-6 px-2">Matheus & Ana</h1>
+                <h1 class="text-2xl font-bold text-white mb-6 px-2">Matheus e Ana</h1>
                 
                 <button onclick="showPage('page-dashboard')" class="sidebar-button active w-full flex items-center space-x-3 px-3 py-2 rounded-md font-medium text-sm hover:bg-gray-700 transition-colors duration-200">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
@@ -1233,6 +1260,13 @@
             return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         }
 
+        window.forceRedrawDashboardChart = () => {
+            // Só redesenha se a página do dashboard estiver ativa
+            if (document.getElementById('page-dashboard').style.display !== 'none') {
+                updateDashboard(allTransactions);
+            }
+        };
+
         window.showPage = (pageId) => {
             document.querySelectorAll('.page-content').forEach(page => page.style.display = 'none');
             document.querySelectorAll('.sidebar-button').forEach(btn => btn.classList.remove('active'));
@@ -1265,6 +1299,7 @@
     </script>
 </body>
 </html>
+
 
 
 
