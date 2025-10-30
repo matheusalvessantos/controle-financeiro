@@ -6,6 +6,8 @@
     <title>Controle Financeiro Profissional</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Adicionado Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         // Script para evitar "flash" do modo escuro. Tem que estar no <head>.
         // Esta lógica LÊ a preferência do sistema.
@@ -51,6 +53,13 @@
         #tipo-despesa-row, #tipo-valor-row {
             display: none;
         }
+        /* Estilo da barra de progresso do orçamento */
+        .progress-bar-bg {
+            background-color: #e5e7eb; /* gray-200 */
+        }
+        .dark .progress-bar-bg {
+            background-color: #374151; /* gray-700 */
+        }
     </style>
 </head>
 <body class="bg-gray-50 dark:bg-black text-slate-800 dark:text-slate-200 transition-colors duration-200">
@@ -65,7 +74,7 @@
         <!-- Sidebar (Navegação Principal) -->
         <nav class="bg-gray-900 text-slate-300 w-full md:w-64 p-4 space-y-2 flex-shrink-0 flex flex-col">
             <div>
-                <h1 class="text-2xl font-bold text-white mb-6 px-2">Matheus & Ana</h1>
+                <h1 class="text-2xl font-bold text-white mb-6 px-2">Matheus e Ana</h1>
                 
                 <button onclick="showPage('page-dashboard')" class="sidebar-button active w-full flex items-center space-x-3 px-3 py-2 rounded-md font-medium text-sm hover:bg-gray-700 transition-colors duration-200">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
@@ -75,6 +84,12 @@
                 <button onclick="showPage('page-lancamentos')" class="sidebar-button w-full flex items-center space-x-3 px-3 py-2 rounded-md font-medium text-sm hover:bg-gray-700 transition-colors duration-200">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
                     <span>Lançamentos</span>
+                </button>
+                
+                <!-- Novo Botão: Orçamentos -->
+                <button onclick="showPage('page-orcamento')" class="sidebar-button w-full flex items-center space-x-3 px-3 py-2 rounded-md font-medium text-sm hover:bg-gray-700 transition-colors duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20v-6M12 14v-4M12 10V4M4 20v-2M4 18v-4M4 14V4M20 20v-4M20 16v-4M20 12V4M16 20v-2M16 18v-4M16 14V4M8 20v-4M8 16v-4M8 12V4"></path></svg>
+                    <span>Orçamentos</span>
                 </button>
 
                 <button onclick="showPage('page-config')" class="sidebar-button w-full flex items-center space-x-3 px-3 py-2 rounded-md font-medium text-sm hover:bg-gray-700 transition-colors duration-200">
@@ -139,20 +154,32 @@
 
                 <!-- Gráficos e Tabelas -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <!-- Gastos por Categoria -->
+                    <!-- Gastos por Categoria (Gráfico) -->
                     <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md border border-slate-200 dark:border-gray-800 transition-colors duration-200">
                         <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4">Gastos por Categoria (Pagos)</h3>
-                        <div id="dash-categorias" class="space-y-4">
-                            <p class="text-slate-500 dark:text-slate-400">Nenhuma despesa paga este mês.</p>
+                        <!-- Container do Gráfico -->
+                        <div id="dash-categorias" class="relative h-64 md:h-80">
+                            <!-- O Canvas ou o texto de "Nenhuma despesa" será injetado aqui pelo JS -->
                         </div>
                     </div>
                     <!-- Faturas de Cartão -->
                     <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md border border-slate-200 dark:border-gray-800 transition-colors duration-200">
                         <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4">Contas a Pagar (Pendentes)</h3>
-                        <div class="flow-root">
+                        <div class="flow-root max-h-80 overflow-y-auto">
                             <ul id="dash-faturas" role="list" class="divide-y divide-slate-200 dark:divide-gray-700">
                                 <li class="py-3 text-slate-500 dark:text-slate-400">Nenhuma conta pendente este mês.</li>
                             </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Novo Card: Orçamentos do Mês -->
+                <div class="grid grid-cols-1 gap-6">
+                     <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md border border-slate-200 dark:border-gray-800 transition-colors duration-200">
+                        <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4">Orçamentos do Mês</h3>
+                        <div id="dash-budgets" class="space-y-4 max-h-80 overflow-y-auto">
+                            <!-- Progresso do Orçamento injetado aqui -->
+                            <p class="text-slate-500 dark:text-slate-400">Nenhum orçamento definido para este mês. Defina na página 'Orçamentos'.</p>
                         </div>
                     </div>
                 </div>
@@ -211,8 +238,41 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- Nova Página: Orçamentos -->
+            <div id="page-orcamento" class="page-content hidden space-y-6">
+                <header class="flex flex-col md:flex-row md:items-center md:justify-between">
+                    <div>
+                        <h2 class="text-3xl font-bold text-slate-900 dark:text-slate-100">Orçamentos Mensais</h2>
+                        <p class="text-slate-600 dark:text-slate-400">Defina suas metas de gastos para cada categoria.</p>
+                    </div>
+                    <!-- Filtros de Mês/Ano para Orçamentos -->
+                    <div class="flex gap-4 mt-4 md:mt-0">
+                        <div>
+                            <label for="budget-filter-month" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Mês</label>
+                            <select id="budget-filter-month" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm transition-colors duration-200">
+                                <!-- Preenchido por JS -->
+                            </select>
+                        </div>
+                        <div>
+                            <label for="budget-filter-year" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Ano</label>
+                            <select id="budget-filter-year" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm transition-colors duration-200">
+                                <!-- Preenchido por JS -->
+                            </select>
+                        </div>
+                    </div>
+                </header>
+                
+                <!-- Lista de Orçamentos -->
+                 <div class="bg-white dark:bg-gray-900 p-6 rounded-lg shadow-md border border-slate-200 dark:border-gray-800 transition-colors duration-200">
+                    <div id="budgets-list" class="space-y-4">
+                        <p class="text-slate-500 dark:text-slate-400">Carregando categorias...</p>
+                        <!-- Inputs de orçamento serão injetados aqui -->
+                    </div>
+                </div>
+            </div>
 
-            <!-- Página 3: Configurações -->
+            <!-- Página 4: Configurações -->
             <div id="page-config" class="page-content hidden space-y-6">
                 <header>
                     <h2 class="text-3xl font-bold text-slate-900 dark:text-slate-100">Configurações</h2>
@@ -366,7 +426,9 @@
             updateDoc,
             collection, 
             onSnapshot,
-            setLogLevel
+            setLogLevel,
+            setDoc, // Importar setDoc para orçamentos
+            getDoc // Importar getDoc para orçamentos
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- VARIÁVEIS GLOBAIS ---
@@ -374,11 +436,27 @@
         let allTransactions = []; // Cache local de todas as transações
         let allCategories = [];
         let allAccounts = [];
+        let categoryChartInstance = null; // Instância do Gráfico
+
+        // Paleta de cores agradável para o gráfico
+        const CHART_COLORS = [
+            '#4f46e5', // Indigo
+            '#ec4899', // Pink
+            '#10b981', // Emerald
+            '#f59e0b', // Amber
+            '#3b82f6', // Blue
+            '#8b5cf6', // Violet
+            '#d946ef', // Fuchsia
+            '#06b6d4', // Cyan
+            '#ef4444', // Red
+            '#22c55e'  // Green
+        ];
 
         // Caminhos das coleções
         const transactionsCollectionPath = `transactions`;
         const accountsCollectionPath = `accounts`;
         const categoriesCollectionPath = `categories`;
+        const budgetsCollectionPath = `budgets`; // Nova coleção
 
         // Elementos da UI
         const loadingOverlay = document.getElementById('loading-overlay');
@@ -392,6 +470,11 @@
         // Filtros da Tabela de Lançamentos
         const txFilterMonth = document.getElementById('tx-filter-month');
         const txFilterYear = document.getElementById('tx-filter-year');
+        
+        // Filtros da Página de Orçamentos
+        const budgetFilterMonth = document.getElementById('budget-filter-month');
+        const budgetFilterYear = document.getElementById('budget-filter-year');
+        const budgetsListEl = document.getElementById('budgets-list');
         
         const transactionsTableBody = document.getElementById('transactions-table-body');
         const accountsList = document.getElementById('accounts-list');
@@ -461,9 +544,9 @@
         
         async function loadInitialData() {
             setupDateFilters();
-            loadCategories();
+            loadCategories(); // Carrega categorias primeiro
             loadAccounts();
-            loadTransactions(); 
+            loadTransactions(); // Carrega transações (que dependem de categorias/contas para exibição)
             setupUIListeners();
             updateModalFormLogic();
         }
@@ -473,36 +556,44 @@
             const currentMonth = new Date().getMonth();
             const currentYear = new Date().getFullYear();
 
-            filterMonth.innerHTML = '';
-            filterYear.innerHTML = '';
-            txFilterMonth.innerHTML = '';
-            txFilterYear.innerHTML = '';
+            // Limpa todos os filtros
+            [filterMonth, filterYear, txFilterMonth, txFilterYear, budgetFilterMonth, budgetFilterYear].forEach(sel => {
+                sel.innerHTML = '';
+            });
 
             months.forEach((month, index) => {
                 const option = new Option(month, index);
-                // Removida a seleção de 'selected' durante o loop
                 filterMonth.add(option.cloneNode(true));
                 txFilterMonth.add(option.cloneNode(true));
+                budgetFilterMonth.add(option.cloneNode(true));
             });
 
             for (let i = currentYear - 3; i <= currentYear + 3; i++) {
                 const option = new Option(i, i);
-                 // Removida a seleção de 'selected' durante o loop
                 filterYear.add(option.cloneNode(true));
                 txFilterYear.add(option.cloneNode(true));
+                budgetFilterYear.add(option.cloneNode(true));
             }
             
-            // **CORREÇÃO (v4.2):** Define os valores selecionados APÓS o loop
+            // Define os valores selecionados APÓS o loop
             filterMonth.value = currentMonth;
             filterYear.value = currentYear;
             txFilterMonth.value = currentMonth;
             txFilterYear.value = currentYear;
+            budgetFilterMonth.value = currentMonth;
+            budgetFilterYear.value = currentYear;
             
+            // Listeners do Dashboard
             filterMonth.addEventListener('change', () => updateDashboard(allTransactions));
             filterYear.addEventListener('change', () => updateDashboard(allTransactions));
             
+            // Listeners dos Lançamentos
             txFilterMonth.addEventListener('change', renderTransactionsTable);
             txFilterYear.addEventListener('change', renderTransactionsTable);
+            
+            // Listeners do Orçamento
+            budgetFilterMonth.addEventListener('change', renderBudgetsPage);
+            budgetFilterYear.addEventListener('change', renderBudgetsPage);
         }
         
         function setupUIListeners() {
@@ -553,7 +644,6 @@
                 
                 if (snapshot.empty) {
                     categoriesList.innerHTML = '<li class="py-2 text-slate-500 dark:text-slate-400">Nenhuma categoria cadastrada.</li>';
-                    return;
                 }
 
                 snapshot.docs.forEach(doc => {
@@ -574,6 +664,11 @@
                 document.querySelectorAll('.delete-config-btn[data-type="category"]').forEach(btn => {
                    btn.addEventListener('click', () => handleDeleteConfig(btn.dataset.id, categoriesCollectionPath));
                 });
+                
+                // Após carregar categorias, renderiza a página de orçamentos
+                renderBudgetsPage();
+                // E atualiza o dashboard (que depende das categorias)
+                updateDashboard(allTransactions);
             });
         }
 
@@ -586,7 +681,6 @@
 
                 if (snapshot.empty) {
                     accountsList.innerHTML = '<li class="py-2 text-slate-500 dark:text-slate-400">Nenhuma conta cadastrada.</li>';
-                    return;
                 }
 
                 snapshot.docs.forEach(doc => {
@@ -694,7 +788,7 @@
             return tr;
         }
 
-        function updateDashboard(transactions) {
+        async function updateDashboard(transactions) {
             const selectedMonth = parseInt(filterMonth.value); 
             const selectedYear = parseInt(filterYear.value);
 
@@ -738,28 +832,78 @@
             document.getElementById('dash-saldo').textContent = formatCurrency(saldoMes);
             document.getElementById('dash-pendentes').textContent = formatCurrency(-totalPendentes);
 
+            // --- LÓGICA DO GRÁFICO (Chart.js) ---
             const dashCategorias = document.getElementById('dash-categorias');
-            dashCategorias.innerHTML = '';
             const sortedCategorias = Object.entries(gastosPorCategoria).sort(([,a],[,b]) => b-a);
+            
+            // Destrói o gráfico antigo, se existir
+            if (categoryChartInstance) {
+                categoryChartInstance.destroy();
+                categoryChartInstance = null;
+            }
+            dashCategorias.innerHTML = ''; // Limpa o conteúdo (texto ou canvas antigo)
 
             if (sortedCategorias.length === 0) {
-                 dashCategorias.innerHTML = '<p class="text-slate-500 dark:text-slate-400">Nenhuma despesa paga este mês.</p>';
+                 dashCategorias.innerHTML = '<p class="text-slate-500 dark:text-slate-400 p-4 text-center h-full flex items-center justify-center">Nenhuma despesa paga este mês.</p>';
             } else {
-                sortedCategorias.forEach(([nome, valor]) => {
-                    const perc = (totalDespesasPagas > 0) ? (valor / totalDespesasPagas) * 100 : 0;
-                    dashCategorias.innerHTML += `
-                        <div>
-                            <div class="flex justify-between mb-1">
-                                <span class="text-sm font-medium text-slate-600 dark:text-slate-300">${nome}</span>
-                                <span class="text-sm font-medium text-slate-600 dark:text-slate-300">${formatCurrency(valor)}</span>
-                            </div>
-                            <div class="w-full bg-slate-200 dark:bg-gray-700 rounded-full h-2.5">
-                                <div class="bg-indigo-500 h-2.5 rounded-full" style="width: ${perc}%"></div>
-                            </div>
-                        </div>
-                    `;
+                // Adiciona o canvas
+                const canvas = document.createElement('canvas');
+                dashCategorias.appendChild(canvas);
+                const ctx = canvas.getContext('2d');
+
+                const labels = sortedCategorias.map(([nome]) => nome);
+                const dataValues = sortedCategorias.map(([,valor]) => valor);
+                
+                // Gerar cores dinâmicas a partir da paleta
+                const colors = dataValues.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]);
+                const isDarkMode = document.documentElement.classList.contains('dark');
+
+                categoryChartInstance = new Chart(ctx, {
+                    type: 'doughnut', // Gráfico de rosca
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Gastos',
+                            data: dataValues,
+                            backgroundColor: colors,
+                            // *** CORREÇÃO AQUI ***
+                            // A borda agora combina com o fundo do card
+                            borderColor: isDarkMode ? '#111827' : '#FFF', // gray-900 ou white
+                            borderWidth: 3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom', // Legenda embaixo
+                                labels: {
+                                    color: isDarkMode ? '#e2e8f0' : '#334155', // Cor do texto da legenda
+                                    padding: 15,
+                                    font: {
+                                        family: 'Inter',
+                                        weight: '500'
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.parsed || 0;
+                                        const total = context.chart.getDatasetMeta(0).total;
+                                        const percentage = ((value / total) * 100).toFixed(1);
+                                        return ` ${label}: ${formatCurrency(value)} (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
                 });
             }
+            // --- FIM DA LÓGICA DO GRÁFICO ---
+
 
             const dashFaturas = document.getElementById('dash-faturas');
             dashFaturas.innerHTML = '';
@@ -785,7 +929,138 @@
                         `;
                     });
             }
+            
+            // --- LÓGICA DO NOVO CARD DE ORÇAMENTOS ---
+            const budgetDocId = `${currentUserId}_${selectedYear}_${selectedMonth}`;
+            const budgetDocRef = doc(db, budgetsCollectionPath, budgetDocId);
+            const budgetDoc = await getDoc(budgetDocRef);
+            const budgets = budgetDoc.exists() ? budgetDoc.data() : {};
+            
+            const dashBudgets = document.getElementById('dash-budgets');
+            dashBudgets.innerHTML = '';
+            
+            const categoriesWithBudgets = allCategories.filter(cat => budgets[cat.name] && budgets[cat.name] > 0);
+            
+            if (categoriesWithBudgets.length === 0) {
+                dashBudgets.innerHTML = '<p class="text-slate-500 dark:text-slate-400">Nenhum orçamento definido para este mês. Defina na página \'Orçamentos\'.</p>';
+            } else {
+                let totalGasto = 0;
+                let totalOrcado = 0;
+                
+                categoriesWithBudgets.forEach(cat => {
+                    const gasto = gastosPorCategoria[cat.name] || 0;
+                    const orcado = budgets[cat.name] || 0;
+                    const perc = (orcado > 0) ? (gasto / orcado) * 100 : 0;
+                    const barColor = perc > 100 ? 'bg-red-500' : (perc > 80 ? 'bg-yellow-500' : 'bg-indigo-500');
+                    
+                    totalGasto += gasto;
+                    totalOrcado += orcado;
+                    
+                    dashBudgets.innerHTML += `
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <span class="text-sm font-medium text-slate-600 dark:text-slate-300">${cat.name}</span>
+                                <span class="text-sm font-medium text-slate-600 dark:text-slate-300">${formatCurrency(gasto)} / ${formatCurrency(orcado)}</span>
+                            </div>
+                            <div class="w-full progress-bar-bg rounded-full h-2.5">
+                                <div class="${barColor} h-2.5 rounded-full" style="width: ${Math.min(perc, 100)}%"></div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                // Adiciona um resumo total
+                 const totalPerc = (totalOrcado > 0) ? (totalGasto / totalOrcado) * 100 : 0;
+                 const totalBarColor = totalPerc > 100 ? 'bg-red-500' : (totalPerc > 80 ? 'bg-yellow-500' : 'bg-indigo-500');
+                 dashBudgets.innerHTML = `
+                    <div class="border-b dark:border-gray-700 pb-4 mb-4">
+                        <div class="flex justify-between mb-1">
+                            <span class="text-sm font-bold text-slate-800 dark:text-slate-100">Total Orçado</span>
+                            <span class="text-sm font-bold text-slate-800 dark:text-slate-100">${formatCurrency(totalGasto)} / ${formatCurrency(totalOrcado)}</span>
+                        </div>
+                        <div class="w-full progress-bar-bg rounded-full h-2.5">
+                            <div class="${totalBarColor} h-2.5 rounded-full" style="width: ${Math.min(totalPerc, 100)}%"></div>
+                        </div>
+                    </div>
+                 ` + dashBudgets.innerHTML;
+            }
         }
+        
+        // --- NOVA LÓGICA DE ORÇAMENTOS (Página 'Orçamentos') ---
+        async function renderBudgetsPage() {
+            if (!allCategories || allCategories.length === 0) {
+                budgetsListEl.innerHTML = '<p class="text-slate-500 dark:text-slate-400">Cadastre suas categorias primeiro na página de Configurações.</p>';
+                return;
+            }
+            
+            const selectedMonth = parseInt(budgetFilterMonth.value);
+            const selectedYear = parseInt(budgetFilterYear.value);
+            const budgetDocId = `${currentUserId}_${selectedYear}_${selectedMonth}`;
+            const budgetDocRef = doc(db, budgetsCollectionPath, budgetDocId);
+            
+            budgetsListEl.innerHTML = '<p class="text-slate-500 dark:text-slate-400">Carregando orçamentos...</p>';
+            
+            const budgetDoc = await getDoc(budgetDocRef);
+            const budgets = budgetDoc.exists() ? budgetDoc.data() : {};
+            
+            budgetsListEl.innerHTML = '';
+            
+            allCategories.forEach(cat => {
+                const budgetValue = budgets[cat.name] || 0;
+                
+                const div = document.createElement('div');
+                div.className = "flex items-center space-x-4";
+                div.innerHTML = `
+                    <label for="budget-${cat.id}" class="w-1/3 text-sm font-medium text-slate-700 dark:text-slate-300">${cat.name}</label>
+                    <div class="flex-1 relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500 dark:text-slate-400">R$</span>
+                        <input 
+                            type="number" 
+                            id="budget-${cat.id}" 
+                            data-category-name="${cat.name}"
+                            value="${budgetValue}"
+                            placeholder="0,00"
+                            class="budget-input pl-10 pr-3 py-2 block w-full border border-slate-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200"
+                        >
+                    </div>
+                `;
+                budgetsListEl.appendChild(div);
+            });
+            
+            // Adiciona listeners para salvar "on-the-fly"
+            document.querySelectorAll('.budget-input').forEach(input => {
+                input.addEventListener('change', handleSaveBudget); // Salva ao perder o foco
+            });
+        }
+        
+        async function handleSaveBudget(e) {
+            const input = e.target;
+            const categoryName = input.dataset.categoryName;
+            const value = parseFloat(input.value) || 0;
+            
+            const selectedMonth = parseInt(budgetFilterMonth.value);
+            const selectedYear = parseInt(budgetFilterYear.value);
+            const budgetDocId = `${currentUserId}_${selectedYear}_${selectedMonth}`;
+            const budgetDocRef = doc(db, budgetsCollectionPath, budgetDocId);
+
+            try {
+                // setDoc com merge=true cria o documento se não existir ou atualiza o campo específico
+                await setDoc(budgetDocRef, {
+                    [categoryName]: value
+                }, { merge: true });
+                
+                // Feedback visual rápido
+                input.classList.add('border-green-500', 'dark:border-green-500');
+                setTimeout(() => {
+                    input.classList.remove('border-green-500', 'dark:border-green-500');
+                }, 1500);
+
+            } catch (error) {
+                console.error("Erro ao salvar orçamento:", error);
+                input.classList.add('border-red-500', 'dark:border-red-500');
+            }
+        }
+
 
         // --- MANIPULAÇÃO DE DADOS (CRUD) ---
 
@@ -949,8 +1224,16 @@
             document.querySelectorAll('.page-content').forEach(page => page.style.display = 'none');
             document.querySelectorAll('.sidebar-button').forEach(btn => btn.classList.remove('active'));
             
-            document.getElementById(pageId).style.display = 'block';
-            document.querySelector(`button[onclick="showPage('${pageId}')"]`).classList.add('active');
+            const pageEl = document.getElementById(pageId);
+            const btnEl = document.querySelector(`button[onclick="showPage('${pageId}')"]`);
+            
+            if (pageEl) pageEl.style.display = 'block';
+            if (btnEl) btnEl.classList.add('active');
+            
+            // Recarrega os dados da página de orçamento se ela for aberta
+            if (pageId === 'page-orcamento') {
+                renderBudgetsPage();
+            }
         };
 
         window.openModal = (modalId) => {
@@ -965,6 +1248,7 @@
     </script>
 </body>
 </html>
+
 
 
 
